@@ -25,7 +25,7 @@ Built with Django, Django REST Framework, PostgreSQL, and JWT Authentication.
 ## Setup Instructions
 
 ### 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/jobtracker.git
+git clone (https://github.com/KhushyanKalla/jobtracker.git)]
 cd jobtracker
 
 ### 2. Create virtual environment
