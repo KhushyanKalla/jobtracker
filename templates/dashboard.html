@@ -1,0 +1,189 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard — JobTracker{% endblock %}
+
+{% block content %}
+
+<!-- Stats Cards -->
+<div style="display:grid; grid-template-columns:repeat(5,1fr);
+            gap:15px; margin-bottom:30px;">
+    {% for label, count in stats.items %}
+    <div style="background:white; padding:20px; border-radius:8px;
+                text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.1)">
+        <div style="font-size:28px; font-weight:bold; color:#1B3A6B;">
+            {{ count }}
+        </div>
+        <div style="color:#666; text-transform:capitalize;">{{ label }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Search + Filter Bar -->
+<form method="get" style="display:flex; gap:10px; margin-bottom:20px;">
+    <input
+        type="text"
+        name="search"
+        value="{{ search_query }}"
+        placeholder="Search by company or role..."
+        style="flex:1; padding:10px; border:1px solid #ddd;
+               border-radius:4px; font-size:14px;">
+
+    <select name="status"
+            style="padding:10px; border:1px solid #ddd; border-radius:4px;">
+        <option value="">All Status</option>
+        <option value="applied"   {% if status_filter == 'applied'   %}selected{% endif %}>Applied</option>
+        <option value="interview" {% if status_filter == 'interview' %}selected{% endif %}>Interview</option>
+        <option value="offer"     {% if status_filter == 'offer'     %}selected{% endif %}>Offer</option>
+        <option value="rejected"  {% if status_filter == 'rejected'  %}selected{% endif %}>Rejected</option>
+    </select>
+
+    <button type="submit"
+            style="padding:10px 20px; background:#1B3A6B;
+                   color:white; border:none; border-radius:4px; cursor:pointer;">
+        Search
+    </button>
+
+    {% if search_query or status_filter %}
+    <a href="{% url 'dashboard' %}"
+       style="padding:10px 20px; background:#666; color:white;
+              border-radius:4px; text-decoration:none;">
+        Clear
+    </a>
+    {% endif %}
+</form>
+
+<!-- Header Row -->
+<div style="display:flex; justify-content:space-between;
+            align-items:center; margin-bottom:15px;">
+    <h2 style="color:#1B3A6B;">
+        My Job Applications
+        {% if search_query or status_filter %}
+            <span style="font-size:14px; color:#666; font-weight:normal;">
+                ({{ page_obj.paginator.count }} results)
+            </span>
+        {% endif %}
+    </h2>
+    <a href="{% url 'job-create' %}"
+       style="background:#1B3A6B; color:white; padding:10px 20px;
+              border-radius:4px; text-decoration:none;">
+        + Add Job
+    </a>
+</div>
+
+<!-- Jobs Table -->
+{% if page_obj %}
+<table style="width:100%; background:white; border-radius:8px;
+              box-shadow:0 2px 5px rgba(0,0,0,0.1); border-collapse:collapse;">
+    <thead>
+        <tr style="background:#1B3A6B; color:white;">
+            <th style="padding:15px; text-align:left;">#</th>
+            <th style="padding:15px; text-align:left;">Company</th>
+            <th style="padding:15px; text-align:left;">Role</th>
+            <th style="padding:15px; text-align:left;">Salary</th>
+            <th style="padding:15px; text-align:left;">Status</th>
+            <th style="padding:15px; text-align:left;">Date Applied</th>
+            <th style="padding:15px; text-align:left;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for job in page_obj %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:15px; color:#999;">{{ forloop.counter }}</td>
+            <td style="padding:15px; font-weight:bold;">{{ job.company }}</td>
+            <td style="padding:15px;">{{ job.role }}</td>
+            <td style="padding:15px;">₹{{ job.salary|intcomma }}</td>
+            <td style="padding:15px;">
+{% if job.status == 'offer' %}
+<span style="padding:5px 12px; border-radius:20px; font-size:12px; background:#d4edda; color:#155724;">
+{% elif job.status == 'rejected' %}
+<span style="padding:5px 12px; border-radius:20px; font-size:12px; background:#f8d7da; color:#721c24;">
+{% elif job.status == 'interview' %}
+<span style="padding:5px 12px; border-radius:20px; font-size:12px; background:#fff3cd; color:#856404;">
+{% else %}
+<span style="padding:5px 12px; border-radius:20px; font-size:12px; background:#d1ecf1; color:#0c5460;">
+{% endif %}
+
+    {{ job.get_status_display }}
+</span>
+            </td>
+            <td style="padding:15px;">{{ job.date_applied }}</td>
+            <td style="padding:15px;">
+                <a href="{% url 'job-edit' job.pk %}"
+                   style="color:#1B3A6B; margin-right:10px;
+                          text-decoration:none; font-weight:bold;">Edit</a>
+                <a href="{% url 'job-delete' job.pk %}"
+                   style="color:#C0392B; text-decoration:none;">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination Controls -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex; justify-content:center; gap:8px;
+            margin-top:25px; align-items:center;">
+
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}"
+       style="padding:8px 16px; background:#1B3A6B; color:white;
+              border-radius:4px; text-decoration:none;">
+        ← Previous
+    </a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span style="padding:8px 16px; background:#1B3A6B; color:white;
+                     border-radius:4px; font-weight:bold;">
+            {{ num }}
+        </span>
+        {% else %}
+        <a href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}"
+           style="padding:8px 16px; background:white; color:#1B3A6B;
+                  border:1px solid #1B3A6B; border-radius:4px; text-decoration:none;">
+            {{ num }}
+        </a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}"
+       style="padding:8px 16px; background:#1B3A6B; color:white;
+              border-radius:4px; text-decoration:none;">
+        Next →
+    </a>
+    {% endif %}
+
+</div>
+<p style="text-align:center; color:#666; margin-top:10px; font-size:13px;">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    — {{ page_obj.paginator.count }} total applications
+</p>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div style="text-align:center; padding:60px; background:white;
+            border-radius:8px; color:#666;">
+    {% if search_query or status_filter %}
+        <p style="font-size:18px;">No results found for your search.</p>
+        <a href="{% url 'dashboard' %}"
+           style="display:inline-block; margin-top:15px; color:#1B3A6B;">
+            Clear filters
+        </a>
+    {% else %}
+        <p style="font-size:18px;">No job applications yet.</p>
+        <a href="{% url 'job-create' %}"
+           style="display:inline-block; margin-top:15px; background:#1B3A6B;
+                  color:white; padding:10px 20px; border-radius:4px;
+                  text-decoration:none;">
+            Add your first application
+        </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
